@@ -15,10 +15,6 @@ EQDT is an earthquake detection system that utilizes an ESP32 microcontroller an
 3. Connect the ESP32 and MPU5060 to your system.
 4. Run the application: `idf.py -p PORT flash monitor`
 
-## Usage
-1. Launch the EQDT application.
-2. The system will start monitoring seismic activity and display real-time data.
-3. In case of an earthquake, the system will trigger an alert and provide relevant information.
 
 ## Contributing
 Contributions are welcome! If you have any ideas or suggestions, please open an issue or submit a pull request.
