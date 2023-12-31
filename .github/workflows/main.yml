@@ -1,34 +1,95 @@
-# This is a basic workflow to help you get started with Actions
+# Reusable changelog generator workflow
+name: Release
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
-  push:
-    branches: ["*"]
+  # Event to call "import" this workflow from a caller a workflow
+  workflow_call:
+    # input string to be provided by the caller workflow
+    inputs:
+      scope:
+        required: true
+        type: string
+        default: "none"
+        description: "module scope name"
+      project_name:
+        required: true
+        type: string
+        default: "none"
+        description: "module/sub-project name"
+      project_dir:
+        required: true
+        type: string
+        default: "none"
+        description: "module/sub-project directory"
+      version:
+        required: false
+        type: string
+        default: "none"
+        description: "module semantic version"
+      fromTag:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the lower bound to process pull requests for"
+      toTag:
+        required: false
+        type: string
+        default: "none"
+        description: "describes the upper bound to process pull request for"
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+    secrets:
+      GIT_TOKEN:
+        required: true
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  # changelog generator job
+  changelo_generator:
     runs-on: ubuntu-22.04
-    name: CI Build Test
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    name: Changelog Generator
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # clones current repository
       - name: Clone Repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch the whole repo history
 
-      # Builds FW from scratch in dev mode, default cmd is `idf.py build`
+
+      - name: Set Release Date
+        run: |
+          echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo $NOW
+
       - name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.1.1
           target: esp32
+      - name: Rename artifact
+        run: |
+          ls -lah
+          cp build/EQDT.bin EQDT.bin
+          cp build/storage.bin storage-EQDT.bin
+          mv sdkconfig sdkgone
+
+
+      - name: Archive Firmware Files
+        uses: actions/upload-artifact@v3
+        with:
+          name: esp32-firmware
+          path: "*EQDT.bin"
+
+      - name: Download Firmware Files
+        uses: actions/download-artifact@v3
+        with:
+          path: release
+
+      # Create release
+      - name: Release Firmware
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "${{ inputs.toTag }}"
+          # body: ${{ steps.build_changelog.outputs.changelog }}
+          # body_path: body.md
+          tag_name: ${{ inputs.toTag }}
+          token: ${{ secrets.GIT_TOKEN }}
+          files: release/*/*.bin
