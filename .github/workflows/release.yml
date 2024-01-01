@@ -64,6 +64,8 @@ jobs:
         with:
           esp_idf_version: v5.1.1
           target: esp32
+          command: idf.py -B build -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig" build
+
       - name: Rename artifact
         run: |
           ls -lah
